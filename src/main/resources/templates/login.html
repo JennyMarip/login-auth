@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户登录</title>
+    <script th:src="@{/static/crypto-js.min.js}"></script>
+    <script>
+        //js写文件
+
+        function doSave(value, type, name) {
+
+            var blob;
+
+            if (typeof window.Blob == "function") {
+
+                blob = new Blob([value], {
+
+                    type: type
+
+                });
+
+            } else {
+
+                var BlobBuilder = window.BlobBuilder || window.MozBlobBuilder || window.WebKitBlobBuilder || window.MSBlobBuilder;
+
+                var bb = new BlobBuilder();
+
+                bb.append(value);
+
+                blob = bb.getBlob(type);
+
+            }
+
+            var URL = window.URL || window.webkitURL;
+
+            var bloburl = URL.createObjectURL(blob);
+
+            var anchor = document.createElement("a");
+
+            if ('download' in anchor) {
+
+                anchor.style.visibility = "hidden";
+
+                anchor.href = bloburl;
+
+                anchor.download = name;
+
+                document.body.appendChild(anchor);
+
+                var evt = document.createEvent("MouseEvents");
+
+                evt.initEvent("click", true, true);
+
+                anchor.dispatchEvent(evt);
+
+                document.body.removeChild(anchor);
+
+            } else if (navigator.msSaveBlob) {
+
+                navigator.msSaveBlob(blob, name);
+
+            } else {
+
+                location.href = bloburl;
+
+            }
+
+        }
+
+        var test = "hello world 123";
+        doSave(test, "txt", "hello.txt");
+      /**
+       * 随机生成字符串
+       * @param len 指定生成字符串长度
+       */
+      function getRandomString(len){
+        let _charStr = 'abacdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ0123456789',
+                min = 0,
+                max = _charStr.length-1,
+                _str = '';                    //定义随机字符串 变量
+        //判断是否指定长度，否则默认长度为15
+        len = len || 15;
+        //循环生成字符串
+        for(var i = 0, index; i < len; i++){
+          index = (function(randomIndexFunc, i){
+            return randomIndexFunc(min, max, i, randomIndexFunc);
+          })(function(min, max, i, _self){
+            let indexTemp = Math.floor(Math.random()*(max-min+1)+min),
+                    numStart = _charStr.length - 10;
+            if(i==0&&indexTemp >=numStart){
+              indexTemp = _self(min, max, i, _self);
+            }
+            return indexTemp ;
+          }, i);
+          _str += _charStr[index];
+        }
+        return _str;
+      }
+      function encodeUTF8(s) {
+        var i, r = [], c, x;
+        for (i = 0; i < s.length; i++)
+          if ((c = s.charCodeAt(i)) < 0x80) r.push(c);
+          else if (c < 0x800) r.push(0xC0 + (c >> 6 & 0x1F), 0x80 + (c & 0x3F));
+          else {
+            if ((x = c ^ 0xD800) >> 10 == 0) //对四字节UTF-16转换为Unicode
+              c = (x << 10) + (s.charCodeAt(++i) ^ 0xDC00) + 0x10000,
+                      r.push(0xF0 + (c >> 18 & 0x7), 0x80 + (c >> 12 & 0x3F));
+            else r.push(0xE0 + (c >> 12 & 0xF));
+            r.push(0x80 + (c >> 6 & 0x3F), 0x80 + (c & 0x3F));
+          };
+        return r;
+      }
+
+      // 散列函数
+      function sha1(s) {
+        var data = new Uint8Array(encodeUTF8(s))
+        var i, j, t;
+        var l = ((data.length + 8) >>> 6 << 4) + 16, s = new Uint8Array(l << 2);
+        s.set(new Uint8Array(data.buffer)), s = new Uint32Array(s.buffer);
+        for (t = new DataView(s.buffer), i = 0; i < l; i++)s[i] = t.getUint32(i << 2);
+        s[data.length >> 2] |= 0x80 << (24 - (data.length & 3) * 8);
+        s[l - 1] = data.length << 3;
+        var w = [], f = [
+                  function () { return m[1] & m[2] | ~m[1] & m[3]; },
+                  function () { return m[1] ^ m[2] ^ m[3]; },
+                  function () { return m[1] & m[2] | m[1] & m[3] | m[2] & m[3]; },
+                  function () { return m[1] ^ m[2] ^ m[3]; }
+                ], rol = function (n, c) { return n << c | n >>> (32 - c); },
+                k = [1518500249, 1859775393, -1894007588, -899497514],
+                m = [1732584193, -271733879, null, null, -1009589776];
+        m[2] = ~m[0], m[3] = ~m[1];
+        for (i = 0; i < s.length; i += 16) {
+          var o = m.slice(0);
+          for (j = 0; j < 80; j++)
+            w[j] = j < 16 ? s[i + j] : rol(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1),
+                    t = rol(m[0], 5) + f[j / 20 | 0]() + m[4] + w[j] + k[j / 20 | 0] | 0,
+                    m[1] = rol(m[1], 30), m.pop(), m.unshift(t);
+          for (j = 0; j < 5; j++)m[j] = m[j] + o[j] | 0;
+        };
+        t = new DataView(new Uint32Array(m).buffer);
+        for (var i = 0; i < 5; i++)m[i] = t.getUint32(i << 2);
+
+        var hex = Array.prototype.map.call(new Uint8Array(new Uint32Array(m).buffer), function (e) {
+          return (e < 16 ? "0" : "") + e.toString(16);
+        }).join("");
+        return hex;
+      }
+      //登录
+      function doLogin() {
+        let name=document.getElementById("username").value;
+        let pwd=document.getElementById("password").value;
+        let code1=sha1(name+pwd);
+        let ver=getRandomString(16);//生成十六位验证码
+        let code2=sha1(code1+ver);
+        let form=new FormData();
+        form.append("username",name);
+        form.append("code2",code2);
+        form.append("ver",ver);
+        let request=new XMLHttpRequest()
+        request.open("POST","/auth")
+        request.send(form)
+        console.log(sha1("123456"))
+        request.onreadystatechange=function(){
+          if(request.status==200&&request.readyState==4){
+            let ack=request.responseText;
+            if(ack.includes("error")){
+              window.alert("用户名或密码错误，请重试！");
+              window.location.reload();
+            }else{
+                let key=code1.slice(0,16);
+                key = CryptoJS.enc.Utf8.parse(key);
+                let decrypt = CryptoJS.AES.decrypt(ack, key, {  mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 });
+                let decryptedStr = decrypt.toString(CryptoJS.enc.Utf8);
+                console.log(decryptedStr)
+                doSave(decryptedStr,"txt","ver.txt")
+                window.location.replace("/user")
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body>
+<input id="username" type="text" placeholder="账号">
+<input id="password" type="password" placeholder="密码">
+<button class="submit_button" onclick="doLogin()">登录</button>
+</body>
+</html>

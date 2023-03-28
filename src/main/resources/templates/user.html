@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录成功</title>
+  <script>
+    function change(){
+      let pwd=document.getElementById("new_pwd").value
+      let form=new FormData()
+      form.append("new_pwd",pwd)
+      let request=new XMLHttpRequest()
+      request.open("POST","/change")
+      request.send(form)
+      request.onreadystatechange=function(){
+        if(request.status==200&&request.readyState==4){
+            window.alert("修改成功")
+            window.location.reload()
+        }
+      }
+    }
+  </script>
+</head>
+<body>
+<h1>修改密码</h1>
+<input id="new_pwd" type="password" placeholder="新密码">
+<button class="submit_button" onclick="change()">修改密码</button>
+</body>
+</html>
